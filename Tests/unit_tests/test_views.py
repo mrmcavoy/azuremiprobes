@@ -16,6 +16,10 @@ class ViewTest(unittest.TestCase):
 	def test_unit_home(self):
 		response = self.app.get('/')
 		self.assertEqual(response.status_code, 200)
+                
+	def test_unit_home_2(self):
+		response = self.app.get('/home')
+		self.assertEqual(response.status_code, 200)
 
 	def test_unit_contact(self):
 		response = self.app.get('/contact')
@@ -25,3 +29,7 @@ class ViewTest(unittest.TestCase):
 		response = self.app.get('/about')
 		self.assertEqual(response.status_code, 200)
 
+	def test_unit_visualise(self):
+		response = self.app.get('/visualise')
+		self.assertEqual(response.status_code, 200)
+                

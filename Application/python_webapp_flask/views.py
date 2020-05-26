@@ -6,7 +6,8 @@ from datetime import datetime
 from flask import render_template
 from python_webapp_flask import app
 
-from flask import Flask, render_template,request
+from flask import Flask, flash, render_template, request, redirect, url_for
+from flask_uploads import UploadSet
 import plotly
 import plotly.graph_objs as go
 import plotly.express as px
@@ -16,7 +17,8 @@ import numpy as np
 import json
 
 from programs import gran_postgres
-
+#from programs import support_functions
+import programs.support_functions as support
 
 @app.route('/')
 @app.route('/home')
@@ -26,6 +28,7 @@ def home():
         'index.html',
         title='Home Page',
         year=datetime.now().year,
+        message='Your home page.'
     )
 
 @app.route('/contact')
@@ -48,69 +51,68 @@ def about():
         message='Your application description page.'
     )
 
-def create_line_chart(df, x_axis, y_axis, text_axis, group_axis):
-
-    fig = go.Figure()
-
-    # columns: date, close_price, symbol, simple_name
-
-    data = []
-    count = 0
-    for group in df[group_axis].unique():
-
-        df_sub = df[df[group_axis] == group]
-
-        # cut clutter by only displaying four items at start
-        if count < 4:
-            visible = True
-        else:
-            visible = 'legendonly'
-
-        data.append(go.Scatter(
-            x = df_sub[x_axis],
-            y = df_sub[y_axis],
-            visible=visible,
-            mode = 'lines',
-            name = group,
-
-        ))
-        count += 1
-
-
-    layout = go.Layout(
-        title = 'Robinhood lineplot',
-        showlegend = True,
-        yaxis = {'title': y_axis},
-        xaxis = {'title': x_axis},
-        template='plotly_dark'
+@app.route('/correction')
+def correction():
+    """Renders the about page."""
+    return render_template(
+        'correction.html',
+        title='Correction',
+        year=datetime.now().year,
+        message='Your application description page.'
     )
-
-    fig = dict(data=data, layout=layout)
-    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-    return graphJSON
-
 
 @app.route('/visualise')
 def visualise():
     """Renders the visualize page."""
 
     # get df of stocks
+
     artifact = gran_postgres.StockConn()
     S2 = artifact.get_stocks_df()
     columns = S2.columns
 
-    # create table
-    #table = create_table(S2, columns)
-
     # create line graph
     x_axis, y_axis, group_axis = 'date', 'close_price', 'symbol'
-    linechart = create_line_chart(S2, x_axis, y_axis, y_axis, group_axis)
-
+    linechart = support.create_line_chart(S2, x_axis, y_axis, y_axis, group_axis)
+    '''    '''
     return render_template(
         'visualise.html',
         linechart=linechart,
-        #table=table,
+        table=json.dumps(go.Figure(), cls=plotly.utils.PlotlyJSONEncoder),
         title='Visualise',
         year=datetime.now().year,
         message='Visualize digested data using plotly'
     )
+
+docs = UploadSet('docs')
+
+@app.route('/upload_data', methods=['GET', 'POST'])
+def upload_data():
+    print("accessed upload_data!")
+    print("Posted file: {}".format(request.files['file']))
+    if request.method == 'POST':
+        #filename = docs.save(request.files['machine_data'])
+        #rec = Doc(filename=filename, user=g.user.id)
+        #rec.store()
+        flash("Machine Data saved.")
+
+        #doc = Doc.load(rec.id)
+        
+        doc = request.files['file']
+        df = pd.read_csv(doc)
+        columns = df.columns
+        row_filter_col = 'Country Code'
+        row_filter = 'JPN'
+        
+        print(df.shape)
+        df = support.format_table(df, columns, row_filter_col, row_filter)
+        print(df.shape)
+
+        graphJSON = support.create_table(df, columns)
+
+    else:
+        print("machine_data not uploaded")
+        graphJSON = None
+
+    return graphJSON
+
