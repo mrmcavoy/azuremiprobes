@@ -20,6 +20,9 @@ from programs import gran_postgres
 #from programs import support_functions
 import programs.support_functions as support
 
+from programs.machine_A import MachineA
+
+
 @app.route('/')
 @app.route('/home')
 def home():
@@ -91,24 +94,35 @@ def upload_data():
     print("accessed upload_data!")
     print("Posted file: {}".format(request.files['file']))
     if request.method == 'POST':
-        #filename = docs.save(request.files['machine_data'])
-        #rec = Doc(filename=filename, user=g.user.id)
-        #rec.store()
+
         flash("Machine Data saved.")
 
-        #doc = Doc.load(rec.id)
-        
+        # get file
         doc = request.files['file']
-        df = pd.read_csv(doc)
+
+
+        parent_dir = 'Application/programs/sample_data/'
+        print(doc.filename)
+        #path = 'sample_data/Magellan Sheet 4.csv'
+        if 'Magellan' in doc.filename:
+
+            # create a class and process
+            MACA = MachineA()
+            df = MACA.process(parent_dir + doc.filename)
+        else:
+            df = pd.read_csv(doc)
+            
+        #print(df.head())
         columns = df.columns
+        '''
         row_filter_col = 'Country Code'
         row_filter = 'JPN'
-        
-        print(df.shape)
         df = support.format_table(df, columns, row_filter_col, row_filter)
+        '''
+        df = support.format_table(df, columns)
         print(df.shape)
 
-        graphJSON = support.create_table(df, columns)
+        graphJSON = support.create_table(df, columns, doc.filename)
 
     else:
         print("machine_data not uploaded")

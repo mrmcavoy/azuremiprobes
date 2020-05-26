@@ -60,7 +60,7 @@ def format_table(df, columns, row_filter_col=None, row_filter=None):
 
     return df
 
-def create_table(df, columns):
+def create_table(df, columns, filename):
 
     fig = go.Figure()
 
@@ -76,7 +76,7 @@ def create_table(df, columns):
         ]
 
     layout = go.Layout(
-        title = 'data table',
+        title = filename,
 
         #width = 1200,
 
